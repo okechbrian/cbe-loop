@@ -70,7 +70,7 @@ model Payout {
   batch       WasteBatch    @relation(fields: [batchId], references: [id])
   batchId     String        @unique
   amount      Float
-  currency    String        @default("KES")
+  currency    String        @default("UGX")
   status      PayoutStatus  @default(PENDING)
   providerRef String?       // mobile-money transaction reference (stub for now)
   createdAt   DateTime      @default(now())
@@ -82,7 +82,7 @@ model RateCard {
   id         String        @id @default(cuid())
   category   WasteCategory
   pricePerKg Float
-  currency   String        @default("KES")
+  currency   String        @default("UGX")
   active     Boolean       @default(true)
   createdAt  DateTime      @default(now())
 

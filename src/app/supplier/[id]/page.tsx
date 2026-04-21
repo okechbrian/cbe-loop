@@ -28,7 +28,7 @@ export default async function SupplierLedger({
     .filter((p) => p.status === 'PAID')
     .reduce((s, p) => s + p.amount, 0);
   const totalCo2 = supplier.batches.reduce((s, b) => s + b.co2DivertedKg, 0);
-  const currency = supplier.payouts[0]?.currency ?? 'KES';
+  const currency = supplier.payouts[0]?.currency ?? 'UGX';
 
   return (
     <main className="mx-auto max-w-2xl p-8">

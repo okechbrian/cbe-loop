@@ -72,3 +72,12 @@ See `prisma/schema.prisma`. Core entities: `Supplier`, `WasteBatch`, `Payout`,
 ## License
 
 MIT
+
+## Hackathon context
+
+Entry for **Future Makers Hackathon 2026** (National Science Week, Uganda).
+Application deadline: 22 Apr 2026 · Demo week: 28 Apr – 3 May 2026 ·
+Prize: UGX 300M × 3 winners in funding, mentorship, and partnerships.
+
+Challenge: _"Powering Uganda to a $500B Economy."_
+
