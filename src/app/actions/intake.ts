@@ -1,6 +1,9 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
+import { promises as fs } from 'node:fs';
+import path from 'node:path';
 import { prisma } from '@/lib/prisma';
 import { classifyStub } from '@/lib/classify';
 import { co2DivertedKg, type WasteCategoryKey } from '@/lib/co2';
@@ -11,9 +14,22 @@ export async function recordBatch(formData: FormData) {
   const supplierId = String(formData.get('supplierId') ?? '');
   const category = String(formData.get('category') ?? '') as WasteCategoryKey;
   const weightKg = Number(formData.get('weightKg') ?? 0);
+  const photo = formData.get('photo');
 
   if (!supplierId || !['GREEN', 'BROWN', 'REJECT'].includes(category) || weightKg <= 0) {
     throw new Error('Invalid input');
+  }
+
+  let photoPath: string | null = null;
+  if (photo instanceof File && photo.size > 0) {
+    const ext = (photo.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '');
+    const filename = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext || 'jpg'}`;
+    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+    await fs.mkdir(uploadsDir, { recursive: true });
+    const filePath = path.join(uploadsDir, filename);
+    const buf = Buffer.from(await photo.arrayBuffer());
+    await fs.writeFile(filePath, buf);
+    photoPath = `/uploads/${filename}`;
   }
 
   const supplier = await prisma.supplier.findUniqueOrThrow({ where: { id: supplierId } });
@@ -23,7 +39,7 @@ export async function recordBatch(formData: FormData) {
   });
   if (!rate) throw new Error('No active rate card for category');
 
-  const clf = classifyStub(category);
+  const clf = classifyStub(category, photoPath ?? undefined);
   const approved = !clf.needsHumanReview && category !== 'REJECT';
   const co2 = approved ? co2DivertedKg(category, weightKg) : 0;
   const routed = approved ? await routeBatchToStage(category, weightKg) : null;
@@ -33,6 +49,7 @@ export async function recordBatch(formData: FormData) {
       supplierId,
       category,
       weightKg,
+      photoPath: photoPath ?? undefined,
       classifierLabel: clf.label,
       classifierScore: clf.score,
       humanReview: clf.needsHumanReview,
@@ -73,4 +90,7 @@ export async function recordBatch(formData: FormData) {
 
   revalidatePath('/intake');
   revalidatePath('/supplier');
+  revalidatePath('/farm');
+  revalidatePath('/report');
+  redirect(`/intake?last=${batch.id}`);
 }
