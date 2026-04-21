@@ -1,36 +1,74 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Circular Bio-Economy Loop
 
-## Getting Started
+A prototype of the procurement-side of a zero-waste agriculture system:
+paid household organic-waste collection feeding a three-stage production chain
+(Poultry → Mushrooms → Vegetables), orchestrated by an AI agent.
 
-First, run the development server:
+Based on the proposal: _The Circular Bio-Economy Loop — A Household-Sourced
+Waste Procurement Model for Integrated Poultry, Mushroom, and Vegetable Production._
+
+## What this prototype covers
+
+The commercial core of the proposal — "households reliably pre-sort when paid,
+and an AI verifies quality at intake" — is implemented end-to-end as a thin
+vertical slice:
+
+- **Supplier app** (`/supplier`) — per-household ledger: kg supplied, earnings,
+  CO₂ diverted, "Trusted Supplier" badge.
+- **Intake station** (`/intake`) — operator weigh-in with a stub AI classifier,
+  auto-approve / human-review routing, stubbed mobile-money payout, and
+  per-stage inventory update.
+- **Rate card + inventory counters** — feed the (rules-based) routing brain
+  that decides which production stage each batch goes to.
+
+## What's stubbed (deliberately)
+
+Until pilot funding lands, these are interfaces rather than implementations:
+
+| Subsystem | Current | Swap-in path |
+|---|---|---|
+| Vision classifier | echoes operator's category + random review flag | CLIP zero-shot / MobileNet fine-tune / hosted endpoint |
+| Mobile-money payout | logs + returns fake `providerRef` | M-Pesa Daraja B2C or similar |
+| Grow-room sensors | manual `InventoryCounter` rows | real humidity/CO₂/temperature sensors |
+| Feed balancer | out of scope for slice 1 | nutrient-estimation model tied to dispenser |
+
+## Roadmap
+
+1. **M0 — skeleton** (this repo): Next.js 16 + Prisma/SQLite, supplier +
+   intake pages, stubs for classifier / payout / sensors.
+2. **M1 — supplier app polish**: phone OTP, push notifications, CO₂ badge share.
+3. **M2 — real classifier**: run CLIP zero-shot locally, log photo + label,
+   ground-truth review queue.
+4. **M3 — real routing**: feed balancer, mushroom substrate scheduler,
+   vegetable-bed composting planner.
+5. **M4 — sustainability ledger**: per-household + per-farm reports export
+   (CSV) for green-credit / sustainability-linked finance applications.
+
+## Stack
+
+- Next.js 16 (App Router, Server Actions)
+- TypeScript
+- Tailwind CSS v4
+- Prisma 6 + SQLite (local dev)
+
+## Dev setup
 
 ```bash
+# one-time
+npm install
+npx prisma migrate dev --name init
+npx tsx prisma/seed.ts
+
+# run
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# open http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Domain model
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+See `prisma/schema.prisma`. Core entities: `Supplier`, `WasteBatch`, `Payout`,
+`RateCard`, `InventoryCounter`.
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## License
 
-## Learn More
-
-To learn more about Next.js, take a look at the following resources:
-
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
-
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+MIT

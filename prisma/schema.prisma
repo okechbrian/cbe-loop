@@ -1,0 +1,99 @@
+// Circular Bio-Economy Loop — domain schema
+// Procurement side (suppliers, batches, payouts) + farm inventory side.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum WasteCategory {
+  GREEN       // high-nitrogen: vegetable trimmings, fruit peels, eggshells
+  BROWN       // high-carbon: coffee grounds, cardboard, dry leaves, sawdust
+  REJECT      // plastic, glass, metal, cooked meat scraps
+}
+
+enum BatchStatus {
+  PENDING_REVIEW
+  APPROVED
+  REJECTED
+}
+
+enum ProductionStage {
+  POULTRY
+  MUSHROOM
+  VEGETABLE
+}
+
+enum PayoutStatus {
+  PENDING
+  PAID
+  FAILED
+}
+
+model Supplier {
+  id            String      @id @default(cuid())
+  phone         String      @unique
+  name          String
+  createdAt     DateTime    @default(now())
+  trusted       Boolean     @default(false)     // "Trusted Supplier" badge
+  rejectCount   Int         @default(0)
+  removed       Boolean     @default(false)
+  batches       WasteBatch[]
+  payouts       Payout[]
+}
+
+model WasteBatch {
+  id              String          @id @default(cuid())
+  supplier        Supplier        @relation(fields: [supplierId], references: [id])
+  supplierId      String
+  category        WasteCategory
+  weightKg        Float
+  photoPath       String?         // intake photo reference
+  classifierLabel String?         // vision model output
+  classifierScore Float?          // confidence 0-1
+  humanReview     Boolean         @default(false)
+  status          BatchStatus     @default(PENDING_REVIEW)
+  routedStage     ProductionStage?
+  co2DivertedKg   Float           @default(0)
+  createdAt       DateTime        @default(now())
+  payout          Payout?
+}
+
+model Payout {
+  id          String        @id @default(cuid())
+  supplier    Supplier      @relation(fields: [supplierId], references: [id])
+  supplierId  String
+  batch       WasteBatch    @relation(fields: [batchId], references: [id])
+  batchId     String        @unique
+  amount      Float
+  currency    String        @default("KES")
+  status      PayoutStatus  @default(PENDING)
+  providerRef String?       // mobile-money transaction reference (stub for now)
+  createdAt   DateTime      @default(now())
+  paidAt      DateTime?
+}
+
+// Live rate card — one active row per category; history retained by createdAt
+model RateCard {
+  id         String        @id @default(cuid())
+  category   WasteCategory
+  pricePerKg Float
+  currency   String        @default("KES")
+  active     Boolean       @default(true)
+  createdAt  DateTime      @default(now())
+
+  @@index([category, active])
+}
+
+// Farm-side inventory counters the AI routing logic reads from
+model InventoryCounter {
+  id             String           @id @default(cuid())
+  stage          ProductionStage  @unique
+  demandKg       Float            @default(0)   // how much feedstock this stage still needs this cycle
+  onHandKg       Float            @default(0)   // how much is already stocked
+  updatedAt      DateTime         @updatedAt
+}
